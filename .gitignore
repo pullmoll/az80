@@ -1,0 +1,15 @@
+# Binaries
+a8085
+az80
+
+# Lex/Yacc intermediate files
+*.output
+*.tab.?
+*yy.?
+
+# Assembelr output and listing
+examples/*.bin
+examples/*.cas
+examples/*.vz
+examples/*.co
+examples/*.lst
