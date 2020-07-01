@@ -1,16 +1,19 @@
 # AZ80 - Another Z80 assembler
+## A8085 - Another 8085 assembler
 
 This software is free for any use. The author cannot be held
 responsible for any problems it might cause, in no case. If
 you don't understand or accept this, delete az80 immediately.
 
-## Purpose:
+### Purpose:
   AZ80 was written as a lex/yacc exercise. Lex and Yacc are
   compiler tools: *Lex*ical Analyzer and *Yet Another Compiler Compiler*.
   AZ80 was written to assemble some tools for the EACA Colour Genie
   and the V-Tech VZ200/VZ300 on the PC and transfer them to an emulator.
 
-## Operation:
+  A8085 was written to assemble some programs for a Tandy Model 100 emulator.
+
+### Operation:
   az80 [options] source[.z80] [output[.bin] [listing[.lst]]
 
   {source} is the filename of a Z80 assembly language program.
@@ -32,7 +35,7 @@ you don't understand or accept this, delete az80 immediately.
       defines the entry point.
   -v  create cassette tape format (V-Tech VZ200/VZ300 .vz image).
 
-# Default keywords:
+### Default keywords:
   + DEFB	define byte(s)<br/>
         exmaple:  DEFB 1,2,3,4<br/>
                   DEFB 12h,34h,56h<br/>
