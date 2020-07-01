@@ -1,9 +1,9 @@
 # AZ80 - Another Z80 assembler
 ## A8085 - Another 8085 assembler
 
-This software is free for any use. The author cannot be held
-responsible for any problems it might cause, in no case. If
-you don't understand or accept this, delete az80 immediately.
+This software is free for any use under the terms of the GPL-2.0-or-later
+license. The author cannot be held responsible for any problems it might
+cause. If you don't understand or accept this, delete az80 immediately.
 
 ### Purpose:
   AZ80 was written as a lex/yacc exercise. Lex and Yacc are
