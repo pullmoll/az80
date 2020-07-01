@@ -1,0 +1,1211 @@
+KEYHIT  EQU     2BH
+INPUT   EQU     40H
+INKEY   EQU     49H
+SLEEP   EQU     60H
+RESET   EQU     66H
+CHAR    EQU     32AH
+RAM     EQU     4000H
+RST30V  EQU     400FH
+CURSOR  EQU     4020H
+COLOUR  EQU     4023H
+TIMES   EQU     4041H
+TIMEM   EQU     4042H
+TIMEH   EQU     4043H
+POS     EQU     40A6H
+INPUTB  EQU     41E8H
+FKEY    EQU     4350H
+MYSP    EQU     43A0H
+CMDPTR  EQU     43A2H
+CURDRV  EQU     43A4H
+DSTDRV  EQU     43A5H
+GRAMAX  EQU     43A6H
+GRACNT  EQU     43A8H
+FILCNT  EQU     43AAH
+DOSERR  EQU     43ACH
+FLAGQ   EQU     43ADH
+MESGQ   EQU     43AEH
+CALLQ   EQU     43B0H
+MEM0    EQU     4800H
+MEM0H	EQU	4C00H
+MEM1	EQU	4C00H
+MEM1H	EQU	5800H
+MEM2	EQU	5C00H
+MEM2H	EQU	0C000H
+MEM3	EQU	0F400H
+MEM3H	EQU	0F800H
+DOSBUF  EQU     5800H
+DOSBH   EQU     59H
+DOSDRV  EQU     5A08H
+GRADIR  EQU     5A0AH
+GRALEN  EQU     5A0BH
+GRABIT  EQU     5A0FH
+GRASPG  EQU     5A12H
+DDTA1   EQU     5B48H
+DDTA2   EQU     5B68H
+CMD     EQU     0C319H
+CREATE  EQU     0CE20H
+OPEN    EQU     0CE24H
+CLOSE   EQU     0CE28H
+KILL    EQU     0CE2CH
+GET     EQU     0CE36H
+PUT     EQU     0CE39H
+DRVSEL  EQU     0CE5BH
+GETP    EQU     0CF6FH
+PUTP    EQU     0CF7BH
+
+        ORG     0E000H
+        DEFM    "N"
+
+ENTRY   LD      A,15
+        CALL    CHAR
+        LD      HL,RAM
+ENTRY1  INC     H
+        LD      A,H
+        OR      A
+        JR      Z,ENTRY2
+        LD      A,(HL)
+        LD      B,A
+        CPL
+        LD      (HL),A
+        CP      (HL)
+        LD      (HL),B
+        JR      Z,ENTRY1
+        DEC     H
+ENTRY2  DEC     HL
+        LD      DE,-50
+        LD      (40B1H),HL
+        ADD     HL,DE
+        LD      (40A0H),HL
+        CALL    1B4DH
+        CALL    01C9H
+        XOR     A
+        LD      (COLOUR),A
+        LD      HL,MSG
+        CALL    PRINT
+
+START   LD      HL,FK11
+        LD      DE,FKEY
+        LD      BC,28
+        LDIR
+        LD      A,0C3H
+        LD      (RST30V),A
+        LD      HL,START
+        LD      (RST30V+1),HL
+        LD      HL,CMDDOS
+        LD      (41ADH),HL
+        JP      START1
+
+MSG     DEFM    "****************************",13
+        DEFM    "*  Colour DOS - Interface  *",13
+        DEFM    "****************************",13,13
+        DEFM    "(C) 1985 by C.Poetzsch",13
+        DEFM    "(C) 1997 by J.Buchmueller ;-)",13,13,0
+
+FK11    DEFM    "HELP   "
+FK12    DEFM    "DIR    "
+FK13    DEFM    "SCOPY 3"
+FK14    DEFM    "BASIC  "
+
+FK21    DEFM    "LIST   "
+FK22    DEFM    "RUN    "
+FK23    DEFM    "AUTO   "
+FK24    DEFM    "EDIT   "
+
+EBOOT   DEFM    "BOOT"
+ECMD    DEFM    "/CMD",0
+
+CMDS    DEFB    '0'+128
+        DEFW    DRIVE
+        DEFB    '1'+128
+        DEFW    DRIVE
+        DEFB    '2'+128
+        DEFW    DRIVE
+        DEFB    '3'+128
+        DEFW    DRIVE
+        DEFM    "BASI",'C'+128
+	DEFW    BASIC
+        DEFM    "CL",'S'+128
+        DEFW    CLS
+        DEFM    "COP",'Y'+128
+        DEFW    COPY
+        DEFM    "DE",'L'+128
+        DEFW    ERA
+        DEFM    "DI",'R'+128
+        DEFW    DIR
+        DEFM    "ER",'A'+128
+        DEFW    ERA
+        DEFM    "HEL",'P'+128
+        DEFW    HELP
+        DEFM    "NAM",'E'+128
+        DEFW    NAME
+        DEFM    "PURG",'E'+128
+        DEFW    PURGE
+        DEFM    "QCOP",'Y'+128
+        DEFW    QCOPY
+        DEFM    "RE",'M'+128
+        DEFW    RESET
+        DEFM    "RE",'N'+128
+        DEFW    REN
+        DEFM    "TIM",'E'+128
+        DEFW    TIME
+        DEFM    "TYP",'E'+128
+        DEFW    TYPE
+        DEFM    "VIE",'W'+128
+        DEFW    VIEW
+        DEFM    "XDI",'R'+128
+        DEFW    DIR
+        DEFB    255
+        DEFB    0
+
+MCOPY   DEFM    " Copy (Y/N/A/Break) ",0
+MKILL   DEFM    " Kill (Y/N/A/Break) ",0
+MSECTS  DEFM    " sectors",13,0
+MLOAD   DEFM    "reading :",0
+MSAVE   DEFM    "writing :",0
+MERASE  DEFM    "erasing :",0
+MTIME   DEFM    "New time (HH:MM:SS) : ",0
+MLABEL  DEFM    "Label: ",0
+MDATE   DEFM    "  Date: ",0
+MKBIN   DEFM    " KB in ",0
+MFILES  DEFM    " File(s)",13,0
+MTOTAL  DEFM    " KB total, ",0
+MFREE   DEFM    " KB free",0
+
+MFROM   DEFM    "block : ",0
+MFILL   DEFM    "filler: ",0
+MENTRY  DEFM    "entry : ",0
+
+MMEM    DEFM    "out of memory",0
+MDNUM   DEFM    "bad drive #",0
+MDRV    DEFM    "missing drive #",0
+MFILE   DEFM    "file not found",0
+MBIN    DEFM    "bad bin format",0
+
+START1  LD      HL,CMDPTR
+        LD      DE,CMDPTR+1
+        LD      BC,40
+        LD      (HL),0
+        LDIR
+        LD      HL,EBOOT
+        LD      DE,DDTA1
+        LD      BC,9
+        LDIR
+        CALL    RUNCMD
+        JP      RESET
+
+CMDDOS  CALL    2169H
+        CALL    0CA5EH
+        CALL    1BAFH
+        LD      HL,INPUTB
+        LD      DE,INPUTB+1
+        LD      BC,39
+        LD      (HL),0
+        LDIR
+        JP      PROMPT
+
+DRIVE   LD      A,(INPUTB)
+        AND     3
+        LD      (CURDRV),A
+
+PROMPT  LD      SP,INPUTB+250
+        CALL    PRTCR
+        LD      A,(CURDRV)
+        CALL    DRVSEL
+        LD      A,(DOSDRV)
+        ADD     A,'0'
+        CALL    CHAR
+        LD      A,'>'
+        CALL    CHAR
+        LD      HL,INPUTB
+        LD      B,38
+        CALL    INPUT
+        JR      C,PROMPT
+        LD      A,B
+        OR      A
+        JR      Z,PROMPT
+        LD      IY,CMDS
+        LD      IX,INPUTB
+        CALL    FCMD
+        CP      -1
+        JR      Z,NOTINT
+        JP      (HL)
+
+NOTINT  LD      HL,INPUTB
+        LD      DE,DDTA1
+CPYDTA  LD      A,(HL)
+        LD      (DE),A
+        INC     HL
+        INC     DE
+        DJNZ    CPYDTA
+        LD      (CMDPTR),DE
+        LD      HL,ECMD
+        LD      BC,5
+        LDIR
+        CALL    RUNCMD
+        JP      C,ENDCMD
+        JP      RESET
+
+CLS     CALL    01C9H
+        JP      RESET
+
+HELP    LD      HL,CMDS
+HELP1   LD      B,10
+HELP2   LD      A,(HL)
+        INC     HL
+        BIT     7,A
+        JR      NZ,HELP3
+        CALL    CHAR
+        DJNZ    HELP2
+HELP3   AND     127
+        CALL    CHAR
+        DEC     B
+HELP4   CALL    PRTSPC
+        DJNZ    HELP4
+        INC     HL
+        INC     HL
+        LD      A,(HL)
+        CP      -1
+        JR      NZ,HELP1
+        JP      ENDCMD
+
+NAME    PUSH    IX
+        LD      A,(CURDRV)
+        CALL    DRVSEL
+        LD      HL,DOSBUF
+        CALL    SNOGAT
+        LD      B,0
+        CALL    GETP
+        LD      B,8
+        POP     HL
+        LD      DE,DOSBUF+208
+
+CNAME   LD      A,(HL)
+        LD      (DE),A
+        CP      ' '
+        JR      Z,FNAME
+        INC     DE
+        INC     HL
+        DJNZ    CNAME
+        JR      FNAME1
+
+FNAME   LD      (DE),A
+        INC     DE
+        DJNZ    FNAME
+
+FNAME1  INC     HL
+        LD      DE,DOSBUF+216
+
+CDATE   LD      A,(HL)
+        CP      13
+        JR      Z,FDATE
+        LD      (DE),A
+        INC     DE
+        INC     HL
+        DJNZ    CDATE
+        JR      FDATE1
+
+FDATE   LD      A,' '
+        LD      (DE),A
+        INC     DE
+        DJNZ    FDATE
+
+FDATE1  LD      HL,DOSBUF
+        CALL    SNOGAT
+        LD      B,0
+        CALL    PUTP
+        JP      RESET
+
+DSTDE   PUSH    BC
+        PUSH    HL
+        PUSH    AF
+        LD      HL,DOSBUF
+        LD      BC,256
+        LDIR
+        LD      A,D
+	CP	MEM1H/256
+        JR      NZ,DSTDE1
+	LD	DE,MEM2
+DSTDE1	CP	MEM2H/256
+        JR      NZ,DSTDE2
+	LD	DE,MEM3
+DSTDE2	CP	MEM3H/256
+        JP      NC,ERRMEM
+        POP     AF
+        POP     HL
+        POP     BC
+        RET
+
+SRCHL   PUSH    BC
+        PUSH    DE
+        PUSH    AF
+        LD      DE,DOSBUF
+        LD      BC,256
+        LDIR
+        LD      A,H
+	CP	MEM1H/256
+        JR      NZ,SRCHL1
+	LD	HL,MEM2
+SRCHL1	CP	MEM2H/256
+        JR      NZ,SRCHL2
+	LD	HL,MEM3
+SRCHL2	CP	MEM3H/256
+        JP      NC,ERRMEM
+        POP     AF
+        POP     DE
+        POP     BC
+        RET
+
+
+COPY    PUSH    IX
+        POP     HL
+        LD      BC,0
+
+COPY0   LD      A,(HL)
+        INC     HL
+        INC     C
+        CP      13
+        JP      Z,ERRDRV
+        CP      ' '
+        JR      NZ,COPY0
+        LD      A,(HL)
+        CP      '0'
+        JP      C,ERRDRV
+        CP      '4'
+        JP      NC,ERRDRV
+        AND     3
+        LD      (DSTDRV),A
+
+COPY1   DEC     HL
+        LD      (HL),0
+        LD      HL,INPUTB+5
+        LD      DE,DDTA1
+        LDIR
+        LD      DE,MEM1
+        EXX
+        LD      DE,DDTA1
+        LD      HL,DOSBUF
+        LD      B,0
+        CALL    OPEN
+        JP      NZ,ENDCMD
+
+COPY2   LD      DE,DDTA1
+        CALL    GET
+        JR      NZ,COPY3
+        EXX
+        CALL    DSTDE
+        EXX
+        JP      C,ERRMEM
+        JR      COPY2
+
+COPY3   CP      28
+        JR      Z,COPY4
+        CP      29
+        JR      Z,COPY4
+        JP      ENDCMD
+
+COPY4   PUSH    IX
+        POP     HL
+        LD      DE,DDTA1
+COPY5   LD      A,(HL)
+        INC     HL
+        LD      (DE),A
+        INC     DE
+        CP      ':'
+        JR      Z,COPY6
+        OR      A
+        JR      NZ,COPY5
+COPY6   DEC     DE
+        LD      A,':'
+        LD      (DE),A
+        INC     DE
+        LD      A,(DSTDRV)
+        ADD     A,'0'
+        LD      (DE),A
+        INC     DE
+        XOR     A
+        LD      (DE),A
+        LD      HL,DOSBUF
+        LD      DE,DDTA1
+        LD      B,0
+        CALL    CREATE
+        JP      NZ,ENDCMD
+        EXX
+        PUSH    DE
+        LD      HL,MEM1
+        EXX
+        POP     HL
+
+COPY7   EXX
+        CALL    SRCHL
+        PUSH    HL
+        EXX
+        LD      DE,DDTA1
+        CALL    PUT
+        JP      NZ,ENDCMD
+        POP     DE
+        OR      A
+        PUSH    HL
+        SBC     HL,DE
+        POP     HL
+        JR      NZ,COPY7
+        LD      DE,DDTA1
+        CALL    CLOSE
+        JP      NZ,ENDCMD
+        JP      RESET
+
+TIME    LD      HL,MTIME
+        CALL    PRINT
+        LD      HL,INPUTB+1
+        LD      B,8
+        CALL    INPUT
+        LD      HL,INPUTB
+        LD      (HL),20H
+        CALL    2B1BH
+        LD      (TIMEH),A
+        LD      HL,(INPUTB+4)
+        LD      (INPUTB+1),HL
+        LD      HL,INPUTB
+        CALL    2B1BH
+        LD      (TIMEM),A
+        LD      HL,(INPUTB+7)
+        LD      (INPUTB+1),HL
+        LD      HL,INPUTB
+        CALL    2B1BH
+        LD      (TIMES),A
+        LD      L,'U'
+        LD      H,0
+        LD      (INPUTB),HL
+        LD      HL,INPUTB
+        LD      A,'U'
+        CALL    CMD
+        JP      RESET
+
+DIR	LD	A,(IX)
+        CP      13
+        JR      Z,DIR0
+        CP      '0'
+        JP      C,ERRDIR
+        CP      '4'
+        JP      NC,ERRDIR
+        AND     3
+        CALL    DRVSEL
+
+DIR0    LD      HL,0
+        LD      (FILCNT),HL
+        LD      HL,DOSBUF
+        CALL    SNOGAT
+        LD      B,0
+        CALL    GETP
+        CALL    CGRANS
+        LD      IX,COLOUR
+	LD	(IX),4
+        LD      HL,MLABEL
+        CALL    PRINT
+	LD	(IX),2
+        LD      HL,DOSBUF+208
+        CALL    PRINT8
+	LD	(IX),4
+        LD      HL,MDATE
+        CALL    PRINT
+	LD	(IX),2
+        LD      HL,DOSBUF+216
+        CALL    PRINT8
+        CALL    PRTCR
+	LD	(IX),0
+
+        CALL    SNODIR
+
+DIR3    LD      HL,DOSBUF
+        CALL    GETP
+        JR      Z,DIRX
+        CALL    DIRS
+        INC     DE
+        JR      DIR3
+
+DIRX    CALL    NEWLIN
+	LD	(IX),2
+        LD      HL,(GRACNT)
+        CALL    PRTKB
+	LD	(IX),4
+        LD      HL,MKBIN
+        CALL    PRINT
+	LD	(IX),2
+        LD      HL,(FILCNT)
+        CALL    0FAFH
+	LD	(IX),4
+        LD      HL,MFILES
+        CALL    PRINT
+	LD	(IX),2
+        LD      HL,(GRAMAX)
+        CALL    PRTKB
+	LD	(IX),4
+        LD      HL,MTOTAL
+        CALL    PRINT
+	LD	(IX),2
+        LD      HL,(GRAMAX)
+        LD      DE,(GRACNT)
+        OR      A
+        SBC     HL,DE
+        CALL    PRTKB
+	LD	(IX),4
+        LD      HL,MFREE
+        CALL    PRINT
+	LD	(IX),0
+        JP      RESET
+
+DIRS    PUSH    BC
+        PUSH    DE
+        LD      HL,DOSBUF
+        LD      B,8
+
+DIRS1   LD      A,(HL)
+        CP      16
+        JR      Z,DIRS2
+        AND     16
+        CP      16
+        JR      NZ,DIRSX
+        LD      A,(INPUTB)
+        CP      'X'
+        JR      NZ,DIRSX
+        LD      A,3
+        LD      (COLOUR),A
+DIRS2   PUSH    HL
+        LD      DE,(FILCNT)
+        INC     DE
+        LD      (FILCNT),DE
+        LD      DE,5
+        ADD     HL,DE
+        PUSH    BC
+        CALL    PRINT8
+        CALL    PRTSPC
+        LD      B,3
+        CALL    PRINTB
+        CALL    PRTSPC
+        LD      A,(POS)
+        CP      38
+        CALL    NC,PRTSPC
+        POP     BC
+        POP     HL
+DIRSX   XOR     A
+        LD      (COLOUR),A
+        LD      DE,32
+        ADD     HL,DE
+        DJNZ    DIRS1
+        POP     DE
+        POP     BC
+        RET
+
+PUTCHR	LD	(IX),A
+        INC     IX
+        CALL    CHAR
+        RET
+
+QLIST   CALL    NEWLIN
+        LD      A,0
+        LD      (FLAGQ),A
+        LD      A,(CURDRV)
+        CALL    DRVSEL
+        LD      IX,MEM0
+        CALL    SNODIR
+
+QLIST1  LD      HL,DOSBUF
+        CALL    GETP
+        OR      A
+        JP      Z,QLISTX
+QLIST2  PUSH    DE
+        PUSH    HL
+        LD      A,(HL)
+        CP      16
+        JP      NZ,QLISTC
+        LD      DE,5
+        ADD     HL,DE
+        LD      IY,(CURSOR)
+        LD      B,8
+QLIST3  LD      A,(HL)
+        CP      ' '
+        JR      Z,QLIST4
+        CALL    PUTCHR
+        INC     HL
+        DJNZ    QLIST3
+QLIST4  LD      A,L
+        ADD     A,B
+        LD      L,A
+        LD      A,0
+        ADC     A,H
+        LD      H,A
+        LD      A,(HL)
+        CP      ' '
+        JR      Z,QLIST6
+        LD      A,'/'
+        CALL    PUTCHR
+        LD      B,3
+QLIST5  LD      A,(HL)
+        CALL    PUTCHR
+        INC     HL
+        DJNZ    QLIST5
+QLIST6  LD      A,':'
+        CALL    PUTCHR
+        LD      A,(DOSDRV)
+        ADD     A,'0'
+        CALL    PUTCHR
+        LD      BC,16
+        ADD     IY,BC
+        LD      (CURSOR),IY
+        LD      HL,(MESGQ)
+        CALL    PRINT
+        LD      A,14
+        CALL    CHAR
+        LD      A,(FLAGQ)
+        OR      A
+        CALL    Z,INKEY
+        CALL    CHAR
+        CP      1
+        JR      Z,QLIST8
+        CP      'A'
+        JR      Z,QLIST9
+        CP      'Y'
+        LD      A,0
+        JR      Z,QLISTA
+        INC     A
+        JR      QLISTA
+QLIST8  LD      A,'N'
+        LD      (FLAGQ),A
+        LD      A,1
+        JR      QLISTA
+QLIST9  LD      A,'Y'
+        LD      (FLAGQ),A
+        LD      A,0
+QLISTA	LD	(IX),A
+        INC     IX
+        CALL    PRTCR
+QLISTC  POP     HL
+        POP     DE
+        LD      BC,32
+        ADD     HL,BC
+        LD      A,H
+        CP      DOSBH
+        JP      NZ,QLIST2
+        INC     DE
+        JP      QLIST1
+
+QLISTX  CALL    PRTCR
+	LD	(IX),13
+        LD      IX,MEM0
+        PUSH    IX
+
+QEXEC   POP     IX
+	LD	A,(IX)
+        CP      13
+        JP      Z,RESET
+        LD      DE,DDTA2
+QEXEC1	LD	A,(IX)
+        LD      (DE),A
+        INC     DE
+        INC     IX
+        CP      ' '
+        JR      NC,QEXEC1
+        PUSH    IX
+        CP      1
+        JR      Z,QEXEC
+        PUSH    DE
+        LD      HL,DDTA2
+        LD      DE,DDTA1
+        LD      BC,32
+        LDIR
+        LD      A,(DSTDRV)
+        ADD     A,'0'
+        POP     DE
+        DEC     DE
+        DEC     DE
+        LD      (DE),A
+        LD      HL,QEXEC
+        PUSH    HL
+        LD      HL,(CALLQ)
+        JP      (HL)
+
+QCOPY	LD	A,(IX)
+        CP      '0'
+        JP      C,ERRDRV
+        CP      '4'
+        JP      NC,ERRDRV
+        AND     3
+        LD      (DSTDRV),A
+        LD      HL,MCOPY
+        LD      (MESGQ),HL
+        LD      HL,QCOPY1
+        LD      (CALLQ),HL
+        JP      QLIST
+
+QCOPY1  LD      HL,MLOAD
+        CALL    PRINT
+        LD      HL,DDTA1
+        CALL    PRINT
+        LD      HL,DOSBUF
+        LD      DE,DDTA1
+        LD      BC,32
+        CALL    OPEN
+        LD      DE,MEM1
+
+QCOPY2  PUSH    DE
+        LD      DE,DDTA1
+        CALL    GET
+        POP     DE
+        OR      A
+        JR      NZ,QCOPY3
+        CALL    DSTDE
+        INC     B
+        JR      QCOPY2
+
+QCOPY3  PUSH    BC
+        LD      DE,DDTA1
+        CALL    CLOSE
+        CALL    PRTSPC
+        LD      L,B
+        LD      H,0
+        CALL    0FAFH
+        LD      HL,MSECTS
+        CALL    PRINT
+        LD      HL,DDTA2
+        LD      DE,DDTA1
+        LD      BC,32
+        LDIR
+        LD      HL,MSAVE
+        CALL    PRINT
+        LD      HL,DDTA1
+        CALL    PRINT
+        CALL    PRTCR
+        LD      HL,DOSBUF
+        LD      DE,DDTA1
+        LD      BC,0
+        CALL    CREATE
+        POP     BC
+        LD      HL,MEM1
+QCOPY4  PUSH    BC
+        CALL    SRCHL
+        LD      DE,DDTA1
+        CALL    PUT
+        POP     BC
+        DJNZ    QCOPY4
+        LD      DE,DDTA1
+        CALL    CLOSE
+        RET
+
+PURGE   LD      HL,MKILL
+        LD      (MESGQ),HL
+        LD      HL,PURGE1
+        LD      (CALLQ),HL
+        JP      QLIST
+
+PURGE1  LD      HL,MERASE
+        CALL    PRINT
+        LD      HL,DDTA1
+        CALL    PRINT
+        LD      DE,DDTA1
+        LD      BC,0
+        CALL    OPEN
+        RET     NZ
+        LD      DE,DDTA1
+        CALL    KILL
+        CALL    PRTCR
+        RET
+
+TYPE    PUSH    IX
+        POP     HL
+        LD      DE,DDTA1
+        LD      A,B
+        SUB     5
+        LD      C,A
+        XOR     A
+        LD      B,A
+        LDIR
+        LD      (DE),A
+        LD      DE,DDTA1
+        LD      HL,DOSBUF
+        CALL    OPEN
+        JP      NZ,ENDCMD
+
+TYPE1   LD      HL,DOSBUF
+        LD      DE,DDTA1
+        LD      B,0
+        CALL    13H
+        JR      NZ,TYPE2
+        CALL    CHAR
+        CALL    KEYHIT
+        CP      1
+        JP      Z,RESET
+        CP      32
+        CALL    Z,INKEY
+        LD      BC,100
+        CALL    SLEEP
+        JR      TYPE1
+
+TYPE2   CP      28
+        JP      NZ,ENDCMD
+        JP      RESET
+
+REN     LD      HL,INPUTB+2
+        LD      A,'N'
+        CALL    CMD
+        JP      NZ,ENDCMD
+        JP      RESET
+
+ERA     PUSH    IX
+        POP     HL
+        LD      DE,DDTA1
+
+ERA1    LD      A,(HL)
+        LD      (DE),A
+        INC     HL
+        INC     DE
+        CP      13
+        JR      NZ,ERA1
+        DEC     DE
+        XOR     A
+        LD      (DE),A
+        LD      HL,DOSBUF
+        LD      DE,DDTA1
+        LD      B,0
+        CALL    OPEN
+        JP      NZ,ENDCMD
+        LD      DE,DDTA1
+        CALL    KILL
+        JP      RESET
+
+BASIC   LD      HL,FK21
+        LD      DE,FKEY
+        LD      BC,28
+        LDIR
+        LD      HL,0C977H
+        LD      (41ADH),HL
+        LD      SP,(40A0H)
+        CALL    01C9H
+        JP      010FH
+
+INFIL   PUSH    BC
+        PUSH    DE
+        PUSH    HL
+        LD      HL,(CMDPTR)
+        LD      C,(HL)
+        INC     HL
+        LD      A,H
+        CP      DOSBH
+        JR      NZ,INFIL1
+        LD      DE,DDTA1
+        CALL    GET
+        LD      HL,DOSBUF
+INFIL1  LD      (CMDPTR),HL
+        LD      A,C
+        POP     HL
+        POP     DE
+        POP     BC
+        RET
+
+RUNCMD  PUSH    BC
+        PUSH    DE
+        PUSH    HL
+        PUSH    AF
+        LD      HL,DOSBUF
+        LD      DE,DDTA1
+        LD      (CMDPTR),HL
+        CALL    OPEN
+        OR      A
+        JR      NZ,RUNX
+        CALL    GET
+        JR      RUN1
+RUNIGN  CALL    INFIL
+        LD      B,A
+RUN0    CALL    INFIL
+        DJNZ    RUN0
+RUN1    CALL    INFIL
+        CP      3
+        JR      Z,RUNIGN
+        CP      2
+        JR      Z,RUNRUN
+        CP      1
+        JP      NZ,ERRBIN
+        CALL    INFIL
+        SUB     2
+        LD      B,A
+        CALL    INFIL
+        LD      L,A
+        CALL    INFIL
+        LD      H,A
+RUN2    CALL    INFIL
+        LD      (HL),A
+        INC     HL
+        DJNZ    RUN2
+        JR      RUN1
+RUNX    POP     AF
+        SCF
+        POP     HL
+        POP     DE
+        POP     BC
+        JR      RUNR1
+
+RUNRUN  CALL    INFIL
+        CALL    INFIL
+        LD      L,A
+        CALL    INFIL
+        LD      H,A
+        LD      (CMDPTR),HL
+        POP     AF
+        OR      A
+        POP     HL
+        POP     DE
+        POP     BC
+RUNR1   JR      C,FCMD
+        PUSH    HL
+        LD      HL,(CMDPTR)
+        EX      (SP),HL
+        RET
+
+FCMD    LD      (CMDPTR),IX
+FCMD1	LD	A,(IY)
+        CP      -1
+        RET     Z
+        RES     7,A
+	CP	(IX)
+        JR      NZ,FCMD3
+	BIT	7,(IY)
+        JR      NZ,FCMD2
+        INC     IY
+        INC     IX
+        JR      FCMD1
+FCMD2   INC     IX
+	LD	A,(IX)
+        CP      ' '
+        JR      Z,FCMD2
+        LD      L,(IY+1)
+        LD      H,(IY+2)
+        RET
+FCMD3   LD      IX,(CMDPTR)
+FCMD4	BIT	7,(IY)
+        INC     IY
+        JR      Z,FCMD4
+        INC     IY
+        INC     IY
+        JR      FCMD1
+
+VIEW    PUSH    IX
+        POP     HL
+        LD      DE,DDTA1
+        LD      A,B
+        SUB     5
+        LD      C,A
+        XOR     A
+        LD      B,A
+        LDIR
+        LD      (DE),A
+        LD      HL,DOSBUF
+        LD      DE,DDTA1
+        CALL    OPEN
+        JP      NZ,ENDCMD
+        LD      HL,DOSBUF
+        LD      DE,DDTA1
+        LD      (CMDPTR),HL
+        CALL    GET
+VIEW0   LD      IX,0
+        LD      IY,0
+VIEW1   CALL    INFIL
+        CP      3
+        JR      Z,VIEWF
+        CP      2
+        JR      Z,VIEWX
+        CP      1
+        JP      NZ,ERRBIN
+        CALL    INFIL
+        LD      B,A
+        CALL    INFIL
+        LD      E,A
+        DEC     B
+        CALL    INFIL
+        LD      D,A
+        DEC     B
+        PUSH    IX
+        POP     HL
+        OR      A
+        SBC     HL,DE
+        JR      Z,VIEW3
+        CALL    VIEWE
+VIEW2   PUSH    DE
+        PUSH    DE
+        POP     IX
+        POP     IY
+        LD      HL,MFROM
+        CALL    PRINT
+        EX      DE,HL
+        CALL    HEXHL
+        LD      A,'-'
+        CALL    CHAR
+VIEW3   CALL    INFIL
+        INC     IX
+        INC     IY
+        DJNZ    VIEW3
+        JR      VIEW1
+
+VIEWF   CALL    VIEWE
+        LD      HL,MFILL
+        CALL    PRINT
+        CALL    INFIL
+        LD      B,A
+        CALL    HEXA
+        CALL    PRTCR
+VIEWF1  CALL    INFIL
+        DJNZ    VIEWF1
+        JR      VIEW0
+
+VIEWX   CALL    VIEWE
+VIEWX1  CALL    INFIL
+        LD      B,A
+        CALL    INFIL
+        LD      E,A
+        CALL    INFIL
+        LD      D,A
+        LD      HL,MENTRY
+        CALL    PRINT
+        EX      DE,HL
+        CALL    HEXHL
+        LD      DE,DDTA1
+        CALL    CLOSE
+        JP      RESET
+
+VIEWE   PUSH    IY
+        POP     HL
+        LD      A,H
+        OR      L
+        RET     Z
+        DEC     HL
+        CALL    HEXHL
+        CALL    PRTCR
+        RET
+
+HEXHL   LD      A,H
+        CALL    HEXA
+        LD      A,L
+HEXA    PUSH    AF
+        RRCA
+        RRCA
+        RRCA
+        RRCA
+        CALL    NIBBLE
+        POP     AF
+NIBBLE  AND     15
+        ADD     A,90H
+        DAA
+        ADC     A,40H
+        DAA
+        JP      CHAR
+
+NEWLIN  LD      A,(POS)
+        OR      A
+        CALL    NZ,PRTCR
+        RET
+
+ERRMEM  LD      HL,MMEM
+PRINTX  CALL    NEWLIN
+        CALL    PRINT
+ENDCMD  JP      RESET
+
+ERRDIR  LD      HL,MDNUM
+        JR      PRINTX
+
+ERRDRV  LD      HL,MDRV
+        JR      PRINTX
+
+ERRFIL  LD      HL,MFILE
+        JR      PRINTX
+
+ERRBIN  LD      HL,MBIN
+        JR      PRINTX
+
+PRTCR   LD      A,13
+        JP      CHAR
+
+PRTSPC  LD      A,32
+        JP      CHAR
+
+PRINT   LD      A,(HL)
+        INC     HL
+        OR      A
+        RET     Z
+        CALL    CHAR
+        JR      PRINT
+
+PRINT8  LD      B,8
+PRINTB  LD      A,(HL)
+        INC     HL
+        CALL    CHAR
+        DJNZ    PRINTB
+        RET
+
+APPCMD  LD      HL,ECMD
+        LD      BC,5
+        LDIR
+        RET
+
+CGRANS  LD      IX,DOSBUF
+        LD      HL,0
+        LD      DE,0
+        LD      A,(GRALEN)
+        LD      B,A
+CGRAN1  PUSH    BC
+        LD      A,(GRABIT)
+        LD      B,A
+	LD	A,(IX)
+        INC     IX
+CGRAN2  RRCA
+        JR      NC,CGRAN3
+        INC     DE
+CGRAN3  INC     HL
+        DJNZ    CGRAN2
+        POP     BC
+        DJNZ    CGRAN1
+        LD      (GRACNT),DE
+        LD      (GRAMAX),HL
+        RET
+
+PRTKB   LD      DE,0
+        LD      A,(GRASPG)
+        LD      B,A
+        EX      DE,HL
+        XOR     A
+PRTKB1  ADD     HL,DE
+        ADC     A,A
+        DJNZ    PRTKB1
+        SRL     A
+        RR      H
+        RR      L
+        SRL     A
+        RR      H
+        RR      L
+        CALL    0FAFH
+        RET
+
+SNOGAT  PUSH    HL
+        PUSH    AF
+        LD      A,(GRASPG)
+        LD      B,A
+        LD      A,(GRABIT)
+        LD      E,A
+        LD      D,0
+        LD      HL,0
+SNOG1   ADD     HL,DE
+        DJNZ    SNOG1
+        LD      A,(GRADIR)
+        LD      B,A
+        LD      DE,0
+        EX      DE,HL
+SNOG2   ADD     HL,DE
+        DJNZ    SNOG2
+        EX      DE,HL
+        POP     AF
+        POP     HL
+        RET
+
+SNODIR  CALL    SNOGAT
+        INC     DE
+        INC     DE
+        RET
+
+        END     ENTRY
+
