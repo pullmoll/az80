@@ -1,0 +1,305 @@
+BDOS	equ	5
+C_EXIT	equ	0
+C_READ	equ	1
+C_WRITE	equ	2
+A_READ	equ	3
+A_WRITE	equ	4
+L_WRITE	equ	5
+C_RAWIO	equ	6
+C_PRINT	equ	9
+
+	org	100h
+
+	ld	de, m_reset
+	call	putmsg
+
+	call	sd_init
+
+	call	sd_reset
+
+	call	cs_hi
+
+	ld	c,C_EXIT
+	call	bdos
+	ret
+
+
+hex_l:
+	push	af
+	ld	a,l
+	call	hexbyte
+	pop	af
+	ret
+
+hexbyte:
+	push	af
+	rrca
+	rrca
+	rrca
+	rrca
+	call	hexnib
+	pop	af
+
+hexnib:
+	push	af
+	and	15
+	add	a,90h
+	daa
+	adc	a,40h
+	daa
+	call	conout
+	pop	af
+	ret
+
+cbdos:
+	push	af
+	push	de
+	push	hl
+	call	BDOS
+	pop	hl
+	pop	bc
+	pop	af
+	ret
+
+conout:
+	push	bc
+	push	de
+	ld	de,0
+	ld	e,a
+	ld	c,C_WRITE
+	call	cbdos
+	pop	de
+	pop	bc
+	ret
+
+putmsg:
+	push	bc
+	ld	c,C_PRINT
+	call	cbdos
+	pop	bc
+	ret
+
+cs_lo:
+	push	af
+	ld	a,0
+	out	(2)
+	pop	af
+	ret
+
+cs_hi:
+	push	af
+	ld	a,0
+	out	(3)
+	pop	af
+	ret
+
+sdout_lo:
+	push	af
+	in	(2)
+	pop	af
+	ret
+
+sdout_hi:
+	push	af
+	in	(2)
+	pop	af
+	ret
+
+data_in:
+	out	(1)		; start the counter
+	in	(0)		; read data byte
+	ret
+
+data_out:
+	out	(0)		; output data byte
+	out	(1)		; start counter
+	ret
+
+dummy_out:
+	push	af
+	ld	a,0ffh
+	call	data_out
+	pop	af
+	ret
+
+; SD command buffer
+SDCMD:	db	0		; SD command byte
+DATA:	db	0,0,0,0		; SD data bytes 0 ... 3
+CKSUM:	db	0ffh		; SD command checksum
+
+R1:	db	0		; SD response 1 received from SD card
+RESP:	db	0,0,0,0		; SD response data
+
+SDCMD0	equ	040h		; software reset
+sdcmd_reset:
+	db	SDCMD0,000h,000h,000h,000h,095h
+
+SDCMD8	equ	048h		; only for SDC V2: check voltage range
+sdcmd_version:
+	db	SDCMD8,000h,000h,001h,0aah,087h
+
+sd_reset:
+	push	af
+
+	ld	b,10
+sd_reset1:
+	call	dummy_out
+	djnz	sd_reset1
+
+	ld	de,sdcmd_reset
+	call	sd_cmd
+	ld	a,(R1)
+	call	hexbyte
+	ld	a,' '
+	call	conout
+
+	ld	de,sdcmd_version
+	call	sd_cmd
+	ld	a,(R1)
+	call	hexbyte
+
+	ld	de,m_crlf
+	call	putmsg
+
+	call	sd_dump_r1
+	pop	af
+	ret
+
+SDCMD1	equ	041h		; initiate initialization process
+sdcmd_init:
+	db	SDCMD1,000h,000h,000h,000h,0ffh
+sd_init:
+	push	af
+
+	ld	de,sdcmd_init
+	call	sd_cmd
+
+	call	sd_dump_r1
+	pop	af
+	ret
+
+SDCMD9	equ	049h		; read CSD register
+
+sd_cmd:
+	call	sdout_hi	; drive SDO high
+	call	cs_hi		; drive SDCS high
+	call	cs_lo		; drive SDCS low
+
+	call	dummy_out	; send a dummy byte
+	ld	b,40
+sd_cmd0:
+	push	bc
+	ld	l,e
+	ld	h,d
+	ld	b,6		; 6 bytes to send
+sd_cmd1:
+	ld	a,(hl)
+	call	data_out
+	inc	hl
+	djnz	sd_cmd1
+	call	dummy_out
+
+	ld	b,20
+sd_cmd2:
+	call	data_in		; read the response R1
+	cp	01h
+	jr	z,sd_cmd3
+	cp	05h
+	jr	z,sd_cmd3
+	djnz	sd_cmd2		; wait for NCR
+
+	pop	bc
+	djnz	sd_cmd0
+	ld	(R1),a		; store R1
+	ret
+
+sd_cmd3:
+	inc	sp		; discard BC
+	inc	sp
+	ld	(R1),a		; store R1
+	ret
+
+;
+;
+;
+sd_dump_r1:
+	ld	a,(R1)
+	bit	7,a
+	ret	nz		; no response
+
+	and	a		; all bits clear?
+	jr	nz,sd_dump_r1_1
+	push	de
+	ld	de, m_success
+	call	putmsg
+	pop	de
+	ret
+
+sd_dump_r1_1:
+	push	bc
+	push	de
+	push	hl
+	ld	b, 7
+	ld	hl, m_r1_table
+
+sd_dump_r1_2:
+	push	af
+	ld	e, (hl)
+	inc	hl
+	ld	d, (hl)
+	inc	hl
+	call	sd_dump_bit0
+	pop	af
+	rrca
+	djnz	sd_dump_r1_2
+
+	ld	de,m_stars
+	call	putmsg
+
+	pop	hl
+	pop	de
+	pop	bc
+	ret
+
+sd_dump_bit0:
+	call	putmsg
+	and	1
+	call	hexnib
+	ld	de, m_crlf
+	call	putmsg
+	ret
+
+m_reset:
+	defm	"Sending reset CMD0 to card.",13,10,'$'
+
+m_success:
+	defm	"Success"
+m_crlf:
+	defb	13,10,'$'
+
+m_idle_state:
+	defm	"Idle state       : $"
+m_erase_reset:
+	defm	"Erase reset      : $"
+m_illegal_command:
+	defm	"Illegal command  : $"
+m_crc_error:
+	defm	"CRC error        : $"
+m_erase_sequence_error:
+	defm	"Erase seq. error : $"
+m_address_error:
+	defm	"Address error    : $"
+m_parameter_error:
+	defm	"Parameter error  : $"
+m_stars:
+	defm	"*******************",13,10,'$'
+
+m_r1_table:
+	defw	m_idle_state
+	defw	m_erase_reset
+	defw	m_illegal_command
+	defw	m_crc_error
+	defw	m_erase_sequence_error
+	defw	m_address_error
+	defw	m_parameter_error
+	defw	m_stars
